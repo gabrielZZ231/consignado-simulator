@@ -1,13 +1,12 @@
 export type UserRole = 'admin' | 'employee';
 export type UserStatus = 'active' | 'inactive';
 
-export interface AppUser {
+export interface PublicUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   status: UserStatus;
-  password: string;
+  createdAt: string;
 }
-
-export type PublicUser = Omit<AppUser, 'password'>;
+export type AppUser = PublicUser;

@@ -199,12 +199,12 @@ docker compose down
 
 ## Acesso administrativo e próximos passos de e-mail
 
-O frontend inclui uma tela de login e uma área de **Gerenciamento de acessos**, mantendo a identidade visual OctaFin. Neste estágio ela é um protótipo local, útil para demonstrar a experiência e as permissões:
+O frontend inclui uma tela de login e uma área de **Gerenciamento de acessos**, integradas ao backend:
 
-- credencial inicial: `admin@octafin.demo` / `admin123`;
+- credencial inicial definida por `AUTH_ADMIN_EMAIL` e `AUTH_ADMIN_PASSWORD` (valores de desenvolvimento em `.env.example`);
 - o administrador pode criar usuários, definir o perfil de **funcionário** ou **administrador** e ativar/desativar contas;
 - funcionários autenticados acessam apenas o simulador; a área de gestão é exclusiva do administrador;
-- os usuários e as senhas existem somente na memória da página. Ao recarregar, voltam ao estado inicial. Não há persistência, API de autenticação, cookies, tokens nem envio real de e-mail.
+- usuários são persistidos em arquivo local fora do Git, senhas usam hash `scrypt` com salt e a sessão é enviada em cookie `HttpOnly`; as rotas administrativas exigem perfil de administrador.
 
 ### Evolução planejada: convite, aprovação e e-mail
 
@@ -389,7 +389,7 @@ Cada instituição possui um formato bruto próprio e regras estritamente fictí
 1. **Sem persistência em banco de dados:** Por decisão de escopo e privacidade do MVP, as simulações existem apenas durante o ciclo de vida da requisição e na memória da tela atual.
 2. **Cálculo sem impostos ou tarifas (CET):** A parcela é calculada puramente pela fórmula matemática da Tabela Price, sem incidência de IOF, seguros ou tarifas cadastrais.
 3. **Sem retomada de stream:** A conexão é cancelada ao iniciar nova simulação, resetar a tela ou desmontar o componente. Se ela cair depois de já entregar resultados, a interface preserva os cards recebidos e informa a interrupção, mas não há reconexão automática nem `Last-Event-ID` neste MVP.
-4. **Autenticação demonstrativa apenas no frontend:** O login e a gestão de acessos não possuem backend, persistência ou proteção criptográfica; credenciais e usuários vivem somente na memória da página. A API permanece aberta para o ambiente local de avaliação.
+4. **Sessões em memória:** Usuários e hashes de senha são persistidos em arquivo local, mas as sessões ativas vivem em memória e expiram ao reiniciar o backend. Para múltiplas instâncias, usar um armazenamento compartilhado de sessões e um banco de dados dedicado.
 
 ---
 

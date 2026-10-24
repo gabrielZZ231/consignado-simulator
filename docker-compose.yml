@@ -14,7 +14,15 @@ services:
       BANK_TIMEOUT_MS: 1800
       BANCO_ALFA_FAILURE_MODE: none
       BANCO_BETA_FAILURE_MODE: none
+      AUTH_ADMIN_EMAIL: admin@consignado.local
+      AUTH_ADMIN_PASSWORD: altere-esta-senha-em-desenvolvimento
+      AUTH_DATA_FILE: /app/data/auth-users.json
+    volumes:
+      - auth-data:/app/data
     restart: unless-stopped
+
+volumes:
+  auth-data:
 
   frontend:
     build:

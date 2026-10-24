@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { SimulationController } from '../controllers/simulation.controller.js';
 import { SimulationService } from '../services/simulation.service.js';
+import type { preHandlerHookHandler } from 'fastify';
 
 export interface SimulationRoutesOptions {
   simulationService?: SimulationService;
+  preHandler?: preHandlerHookHandler;
 }
 
 export async function registerSimulationRoutes(
@@ -22,6 +24,6 @@ export async function registerSimulationRoutes(
   app.get('/health', healthHandler);
   app.get('/api/health', healthHandler);
 
-  app.post('/api/simulations', controller.handleCreateSimulation);
-  app.post('/api/simulations/stream', controller.handleCreateSimulationStream);
+  app.post('/api/simulations', { preHandler: options.preHandler }, controller.handleCreateSimulation);
+  app.post('/api/simulations/stream', { preHandler: options.preHandler }, controller.handleCreateSimulationStream);
 }

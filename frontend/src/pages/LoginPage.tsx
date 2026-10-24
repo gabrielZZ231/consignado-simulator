@@ -1,37 +1,20 @@
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import octafinLogo from '../assets/octafin-logo.png';
-import type { AppUser, PublicUser } from '../types/auth.types';
+import type { PublicUser } from '../types/auth.types';
 
 interface LoginPageProps {
-  users: AppUser[];
-  onLogin: (user: PublicUser) => void;
+  onLogin: (email: string, password: string) => Promise<PublicUser>;
 }
 
-export function LoginPage({ users, onLogin }: LoginPageProps) {
-  const [email, setEmail] = useState('admin@octafin.demo');
-  const [password, setPassword] = useState('admin123');
+export function LoginPage({ onLogin }: LoginPageProps) {
+  const [email, setEmail] = useState('admin@consignado.local');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const user = users.find(
-      (candidate) => candidate.email.toLowerCase() === email.trim().toLowerCase()
-    );
-
-    if (!user || user.password !== password) {
-      setError('E-mail ou senha inválidos.');
-      return;
-    }
-
-    if (user.status !== 'active') {
-      setError('Este acesso está inativo. Solicite a liberação ao administrador.');
-      return;
-    }
-
-    const { password: _password, ...publicUser } = user;
-    setError(null);
-    onLogin(publicUser);
+    try { await onLogin(email.trim(), password); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível entrar.'); }
   };
 
   return (
@@ -132,8 +115,7 @@ export function LoginPage({ users, onLogin }: LoginPageProps) {
             </button>
           </form>
           <p className="mt-6 rounded-xl bg-[#F4F8FB] p-3 text-xs leading-relaxed text-slate-600">
-            Protótipo local: esta tela não substitui autenticação, sessões seguras ou gestão de
-            senhas de produção.
+            A sessão é validada pelo servidor. Solicite suas credenciais ao administrador.
           </p>
         </section>
       </div>

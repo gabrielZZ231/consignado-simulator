@@ -194,6 +194,7 @@ export async function streamSimulation(
         Accept: 'text/event-stream'
       },
       body: JSON.stringify(payload),
+      credentials: 'include',
       signal
     });
   } catch (error) {
@@ -299,7 +300,8 @@ export async function createSimulation(
         'Content-Type': 'application/json',
         Accept: 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      credentials: 'include'
     });
   } catch {
     throw new SimulationApiError(
