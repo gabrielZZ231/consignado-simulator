@@ -232,15 +232,17 @@ Content-Type: application/json
 
 ```json
 {
-  "name": "Maria Clara Oliveira",
-  "email": "maria.oliveira@exemplo.com.br",
-  "cpf": "52998224725",
-  "cnpj": "11222333000181",
+  "name": "Pessoa Exemplo",
+  "email": "pessoa.exemplo@exemplo.test",
+  "cpf": "12345678909",
+  "cnpj": "12345678000195",
   "salary": 5500,
   "requestedAmount": 10000,
   "installments": 24
 }
 ```
+
+> Os dados deste exemplo são sintéticos e servem somente para demonstrar o contrato da API. Não representam uma pessoa ou empresa real.
 
 **Limites de validação (Zod):**
 - `name`: 3 a 120 caracteres.
