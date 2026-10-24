@@ -14,15 +14,12 @@ services:
       BANK_TIMEOUT_MS: 1800
       BANCO_ALFA_FAILURE_MODE: none
       BANCO_BETA_FAILURE_MODE: none
-      AUTH_ADMIN_EMAIL: admin@consignado.local
-      AUTH_ADMIN_PASSWORD: altere-esta-senha-em-desenvolvimento
+      AUTH_ADMIN_EMAIL: ${AUTH_ADMIN_EMAIL:-admin@consignado.local}
+      AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:?Defina AUTH_ADMIN_PASSWORD no arquivo .env}
       AUTH_DATA_FILE: /app/data/auth-users.json
     volumes:
       - auth-data:/app/data
     restart: unless-stopped
-
-volumes:
-  auth-data:
 
   frontend:
     build:
@@ -36,3 +33,6 @@ volumes:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  auth-data:
