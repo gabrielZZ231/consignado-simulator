@@ -27,7 +27,7 @@ Aplicação full-stack (MVP) para **simulação estritamente fictícia de empré
 
 - **Monorepo:** npm Workspaces (`backend` e `frontend`)
 - **Backend:** Node.js, TypeScript (modo estrito), Fastify 5, `@fastify/cors`, Zod
-- **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS 4, Lucide React (`lucide-react`), React Hook Form, `@hookform/resolvers`, Zod e controle de acesso demonstrativo em memória
+- **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS 4, Lucide React (`lucide-react`), React Hook Form, `@hookform/resolvers`, Zod e interface de controle de acesso integrada ao backend
 - **Testes:** Vitest, Testing Library (`@testing-library/react`, `jsdom`)
 - **Containers:** Docker e Docker Compose
 
@@ -217,7 +217,7 @@ Em uma versão de produção, a criação não ativaria o acesso imediatamente. 
 5. o administrador recebe e-mails de auditoria para criação, aprovação, suspensão e reativação; o funcionário recebe somente comunicações do próprio acesso;
 6. esquecimento de senha, troca de e-mail e MFA seguiriam o mesmo padrão de token curto, uso único, expiração e auditoria.
 
-Isso exigiria autenticação no backend, banco de dados, hash de senha forte (por exemplo, Argon2id), sessão segura em cookie `HttpOnly`/`Secure`/`SameSite`, rate limiting, trilha de auditoria, RBAC validado no servidor e integração com um provedor de e-mail. Nenhuma senha, token de convite ou documento deve aparecer em logs ou analytics.
+Isso exigiria evoluir a autenticação existente, adotar banco de dados, avaliar hash de senha forte (por exemplo, Argon2id), sessão segura em cookie `HttpOnly`/`Secure`/`SameSite`, rate limiting, trilha de auditoria, RBAC validado no servidor e integração com um provedor de e-mail. Nenhuma senha, token de convite ou documento deve aparecer em logs ou analytics.
 
 ---
 
@@ -253,9 +253,9 @@ Content-Type: application/json
 - `requestedAmount`: entre `R$ 300,00` e `R$ 500.000,00`.
 - `installments`: inteiro entre `6` e `84` parcelas.
 
-### Exemplo de Resposta Consolidada (Demonstrando os 3 Estados: `approved`, `rejected` e `unavailable`)
+### Exemplo de Resposta Consolidada
 
-Cada item em `results` segue o mesmo contrato normalizado, podendo assumir o estado `approved`, `rejected` ou `unavailable` (com `reasonCode` diferenciando `TIMEOUT` de `INTEGRATION_ERROR`):
+Cada item em `results` segue o mesmo contrato normalizado, podendo assumir `approved`, `rejected` ou `unavailable` (com `reasonCode` diferenciando `TIMEOUT` de `INTEGRATION_ERROR`). A configuração padrão retorna dois itens, um por banco. O exemplo abaixo ilustra aprovação e rejeição; se uma integração falhar, seu próprio item será `unavailable`. Os valores são ilustrativos:
 
 ```json
 {
@@ -292,19 +292,7 @@ Cada item em `results` segue o mesmo contrato normalizado, podendo assumir o est
       "message": "Prazo fora da faixa fictícia do Banco Beta (permitido de 12 a 84 parcelas).",
       "reasonCode": "TERM_OUT_OF_RANGE",
       "responseTimeMs": 184
-    },
-    {
-      "bankCode": "banco-exemplo-indisponivel",
-      "bankName": "Banco Exemplo (Quando em Falha ou Timeout)",
-      "status": "unavailable",
-      "monthlyInterestRate": null,
-      "installmentAmount": null,
-      "approvedAmount": null,
-      "installments": null,
-      "totalAmount": null,
-      "message": "Tempo limite excedido ao consultar o Banco Beta. Tente novamente em instantes.",
-      "reasonCode": "TIMEOUT",
-      "responseTimeMs": 1800
+
     }
   ]
 }
@@ -348,7 +336,7 @@ Os testes cobrem:
 - Stream `POST /api/simulations/stream`: framing SSE, ordem de conclusão, timeout individual e ausência de CPF/CNPJ nos eventos;
 - Parser de SSE no frontend, incluindo chunks parciais/múltiplos, CRLF e abort;
 - Substituição incremental de skeleton por card bancário na interface React.
-- Login demonstrativo, criação de funcionário pelo administrador e ativação/desativação de acesso em memória.
+- Login demonstrativo, criação de funcionário pelo administrador e ativação/desativação de acesso; usuários em arquivo local e sessões em memória.
 
 ---
 
@@ -376,7 +364,7 @@ Cada instituição possui um formato bruto próprio e regras estritamente fictí
 
 ### 3. Isolamento de Falhas e Timeout Individual
 
-- Cada adaptador bancário é executado de forma concorrente por meio de `Promise.allSettled` e protegido por um wrapper `withTimeout` individual (padrão `1800ms`).
+- As integrações são iniciadas concorrentemente e protegidas por um wrapper `withTimeout` individual (padrão `1800ms`). Na resposta consolidada, `Promise.all` aguarda os resultados; `simulateBank` captura as falhas de cada integração antes dessa espera.
 - Caso uma instituição lance exceção de integração ou ultrapasse seu tempo limite, o `SimulationService` converte o erro exclusivamente para aquela instituição no estado `unavailable` (`reasonCode: 'INTEGRATION_ERROR'` ou `'TIMEOUT'`), preservando o resultado das demais instituições.
 - Para facilitar demonstrações manuais sem reiniciar containers, além das variáveis `BANCO_ALFA_FAILURE_MODE` e `BANCO_BETA_FAILURE_MODE`, o simulador aceita tags de teste no e-mail (disponíveis também nos botões de preenchimento rápido da interface):
   - `+erro-alfa@` ou `+erro-beta@`: força falha técnica na respectiva instituição;
@@ -397,9 +385,9 @@ Cada instituição possui um formato bruto próprio e regras estritamente fictí
 
 ### O que foi implementado neste MVP
 
-#### 1. Isolamento de falhas por instituição (`Promise.allSettled` + Timeout individual)
-- **Problema:** Em um simulador que consulta múltiplos bancos, uma falha de rede ou lentidão em apenas uma instituição derrubaria toda a requisição (`HTTP 500/504`) se as chamadas fossem acopladas com `Promise.all` ou sem timeout individual.
-- **Proposta:** Foi implementado um wrapper `withTimeout` individual por banco e orquestração com `Promise.allSettled` no `SimulationService`, convertendo falhas técnicas e estouros de tempo em resultados normalizados com estado `unavailable` (`reasonCode: 'INTEGRATION_ERROR'` ou `'TIMEOUT'`).
+#### 1. Isolamento de falhas por instituição (captura individual + timeout)
+- **Problema:** Em um simulador que consulta múltiplos bancos, uma falha de rede ou lentidão em apenas uma instituição derrubaria toda a requisição (`HTTP 500/504`) se erros de integração fossem propagados sem tratamento individual ou se não houvesse timeout.
+- **Proposta:** Foi implementado um wrapper `withTimeout` individual por banco e captura individual no `SimulationService` antes da consolidação com `Promise.all`, convertendo falhas técnicas e estouros de tempo em resultados normalizados com estado `unavailable` (`reasonCode: 'INTEGRATION_ERROR'` ou `'TIMEOUT'`).
 - **Por quê:** Para o **cliente**, garante que ele receba e compare imediatamente as propostas dos bancos que responderam com sucesso sem ficar bloqueado por um parceiro fora do ar; para a **operação**, evita que a instabilidade de um parceiro externo derrube a taxa de sucesso global do simulador.
 
 #### 2. Distinção clara na interface entre Reprovação de Regra e Indisponibilidade Técnica
@@ -424,7 +412,7 @@ Cada instituição possui um formato bruto próprio e regras estritamente fictí
 
 #### 6. Login demonstrativo e gestão administrativa de acessos
 - **Problema:** Sem uma camada de acesso, qualquer pessoa que abra a interface pode usar o simulador e não existe uma experiência para o administrador controlar a entrada de funcionários.
-- **Proposta:** Foi incluída uma tela de login e uma área exclusiva de administração. O administrador inicial pode criar usuários, escolher os perfis de funcionário ou administrador e ativar/desativar acessos durante a sessão. O estado é propositalmente efêmero e local.
+- **Proposta:** Foi incluída uma tela de login e uma área exclusiva de administração. O administrador inicial pode criar usuários, escolher os perfis de funcionário ou administrador e ativar/desativar acessos. Usuários e hashes são persistidos em arquivo local; as sessões são mantidas em memória.
 - **Por quê:** Para a **operação**, demonstra a separação entre quem gerencia acessos e quem apenas executa simulações; para a **evolução técnica**, estabelece uma UI pronta para ser conectada a RBAC e autenticação reais, sem alegar segurança inexistente.
 
 ---
