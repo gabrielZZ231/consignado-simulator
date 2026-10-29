@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import * as authApi from './services/auth.api';
 import { AccessManagementPage } from './pages/AccessManagementPage';
 import { LoginPage } from './pages/LoginPage';
 import { SimulatorPage } from './pages/SimulatorPage';
+import * as authApi from './services/auth.api';
 import type { PublicUser } from './types/auth.types';
 
 export function App() {
@@ -13,15 +13,24 @@ export function App() {
 
   if (!currentUser) {
     return (
-      <LoginPage onLogin={async (email, password) => { const { user } = await authApi.login(email, password); setCurrentUser(user);
+      <LoginPage
+        onLogin={async (email, password) => {
+          const { user } = await authApi.login(email, password);
+          setCurrentUser(user);
           setPage('simulator');
           setShowAccessHint(user.role === 'admin');
-          if (user.role === 'admin') setUsers((await authApi.listUsers()).users); return user; }} />
+          if (user.role === 'admin') {
+            setUsers((await authApi.listUsers()).users);
+          }
+          return user;
+        }}
+      />
     );
   }
 
   const logout = () => {
-    void authApi.logout().catch(() => undefined); setCurrentUser(null);
+    void authApi.logout().catch(() => undefined);
+    setCurrentUser(null);
     setPage('simulator');
     setShowAccessHint(false);
   };
@@ -33,8 +42,14 @@ export function App() {
         users={users}
         onLogout={logout}
         onOpenSimulator={() => setPage('simulator')}
-        onCreateUser={async (input) => { const { user } = await authApi.createUser(input); setUsers((previous) => [...previous, user]); }}
-        onToggleUserStatus={async (userId) => { const { user } = await authApi.toggleUserStatus(userId); setUsers((previous) => previous.map((item) => item.id === userId ? user : item)); }}
+        onCreateUser={async (input) => {
+          const { user } = await authApi.createUser(input);
+          setUsers((previous) => [...previous, user]);
+        }}
+        onToggleUserStatus={async (userId) => {
+          const { user } = await authApi.toggleUserStatus(userId);
+          setUsers((previous) => previous.map((item) => (item.id === userId ? user : item)));
+        }}
       />
     );
   }

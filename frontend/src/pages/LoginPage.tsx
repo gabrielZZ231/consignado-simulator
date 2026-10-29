@@ -14,7 +14,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    try { await onLogin(email.trim(), password); setError(null); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível entrar.'); }
+    try {
+      await onLogin(email.trim(), password);
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível entrar.');
+    }
   };
 
   return (
