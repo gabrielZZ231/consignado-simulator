@@ -296,4 +296,22 @@ describe('Rotas HTTP da API (/health, POST /api/simulations e POST /api/simulati
       }
     }, 5000);
   });
+
+  it('permite método PATCH no preflight CORS para desativar/ativar usuário em /api/admin/users/:id/status', async () => {
+    const app = buildApp({ logger: false, corsOrigin: 'http://localhost:5173' });
+
+    const preflight = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/admin/users/user-1/status',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'PATCH'
+      }
+    });
+
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers['access-control-allow-methods']).toContain('PATCH');
+
+    await app.close();
+  });
 });

@@ -37,7 +37,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       }
       callback(new Error('Origem não permitida pela política de CORS.'), false);
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept', 'Cache-Control'],
     credentials: true
   });

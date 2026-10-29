@@ -4,7 +4,7 @@ import { AppError } from '../errors/app-error.js';
 import { AuthService, type PublicUser } from '../services/auth.service.js';
 declare module 'fastify' { interface FastifyRequest { currentUser?: PublicUser; sessionToken?: string; } }
 const loginSchema = z.object({ email: z.string().email().transform((v) => v.toLowerCase()), password: z.string().min(1) });
-const userSchema = z.object({ name: z.string().trim().min(3).max(120), email: z.string().email(), password: z.string().min(8).max(256), role: z.enum(['admin', 'employee']) });
+const userSchema = z.object({ name: z.string().trim().min(3).max(120), email: z.string().email(), password: z.string().min(6).max(256), role: z.enum(['admin', 'employee']) });
 const cookie = (request: FastifyRequest): string | undefined => request.headers.cookie?.split(';').map((part) => part.trim()).find((part) => part.startsWith('session='))?.slice(8);
 export const authenticate = (auth: AuthService, required = true) => async (request: FastifyRequest): Promise<void> => { const token = cookie(request); const user = await auth.getUser(token); if (!user && required) throw new AppError('Autenticação necessária.', 401, 'UNAUTHORIZED'); request.currentUser = user ?? undefined; request.sessionToken = token; };
 const adminOnly = async (request: FastifyRequest): Promise<void> => { if (request.currentUser?.role !== 'admin') throw new AppError('Acesso restrito a administradores.', 403, 'FORBIDDEN'); };

@@ -1,7 +1,11 @@
 import type { PublicUser, UserRole } from '../types/auth.types';
 import { getApiBaseUrl, SimulationApiError } from './simulation.api';
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, credentials: 'include', headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) } });
+  const headers: HeadersInit = {
+    ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    ...(init.headers ?? {})
+  };
+  const response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, credentials: 'include', headers });
   if (!response.ok) { const body = await response.json().catch(() => null) as { error?: { message?: string } } | null; throw new SimulationApiError(body?.error?.message ?? 'Não foi possível concluir a operação.', response.status); }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
